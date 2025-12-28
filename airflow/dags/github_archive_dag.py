@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import gzip
+import logging
+
 import pendulum
 import requests
+from kafka import KafkaProducer
 
 from airflow.decorators import dag, task
 from airflow.models import Variable
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
-from kafka import KafkaProducer
+
+logger = logging.getLogger(__name__)
 
 default_args = {"owner": "airflow"}
 
@@ -41,13 +45,17 @@ def github_archive_minio_kafka():
 
         hook = S3Hook(aws_conn_id="minio")
         if not hook.check_for_bucket(bucket_name=bucket):
+            logger.info(f"Bucket {bucket} does not exist. Creating bucket.")
             hook.create_bucket(bucket_name=bucket)
-
+            logger.info(f"Bucket {bucket} created.")
+        
         resp = requests.get(url, stream=True, timeout=300)
         resp.raise_for_status()
+        logger.info(f"Successfully fetched data from {url}")
         resp.raw.decode_content = True
 
         hook.load_file_obj(file_obj=resp.raw, key=key, bucket_name=bucket, replace=True)
+        logger.info(f"Successfully uploaded data to s3://{bucket}/{key}")
         return key
 
     @task

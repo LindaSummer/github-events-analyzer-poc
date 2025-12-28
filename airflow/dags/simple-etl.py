@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-from airflow.sdk import task, dag
 
+from airflow.sdk import dag, task
 
 default_args = {
     'owner': 'airflow',
