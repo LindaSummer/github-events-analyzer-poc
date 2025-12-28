@@ -22,12 +22,17 @@ default_args = {"owner": "airflow"}
 )
 def github_archive_minio_kafka():
     @task
-    def fetch_to_s3(
-        year: str = "{{ (logical_date.subtract(hours=1)).format('YYYY') }}",
-        month: str = "{{ (logical_date.subtract(hours=1)).format('MM') }}",
-        day: str = "{{ (logical_date.subtract(hours=1)).format('DD') }}",
-        hour: str = "{{ (logical_date.subtract(hours=1)).hour }}",
-    ) -> str:
+    def fetch_to_s3(logical_date=None) -> str:
+        # Parse logical_date from context
+        if isinstance(logical_date, str):
+            logical_date = pendulum.parse(logical_date)
+        
+        target_dt = logical_date.subtract(hours=1)
+        year = target_dt.format('YYYY')
+        month = target_dt.format('MM')
+        day = target_dt.format('DD')
+        hour = target_dt.hour
+        
         url = f"https://data.gharchive.org/{year}-{month}-{day}-{hour}.json.gz"
 
         bucket = Variable.get("GH_ARCHIVE_BUCKET", default_var="gharchive")
