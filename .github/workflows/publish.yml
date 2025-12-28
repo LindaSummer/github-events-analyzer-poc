@@ -44,6 +44,5 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.branch }}-${{ steps.vars.outputs.sha_short }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.branch }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
