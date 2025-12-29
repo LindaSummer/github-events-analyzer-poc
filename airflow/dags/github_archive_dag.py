@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 import logging
+import tempfile
 
 import pendulum
 import requests
@@ -54,7 +55,14 @@ def github_archive_minio_kafka():
         logger.info(f"Successfully fetched data from {url}")
         resp.raw.decode_content = True
 
-        hook.load_file_obj(file_obj=resp.raw, key=key, bucket_name=bucket, replace=True)
+        # Write response to temporary file and upload
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".json.gz") as tmp:
+            tmp.write(resp.content)
+            tmp_path = tmp.name
+        
+        logger.info(f"Saved fetched data to temporary file: {tmp_path}")
+        
+        hook.load_file(tmp_path, key=key, bucket_name=bucket, replace=True)
         logger.info(f"Successfully uploaded data to s3://{bucket}/{key}")
         return key
 
