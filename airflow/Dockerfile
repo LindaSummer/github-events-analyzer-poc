@@ -4,6 +4,7 @@ RUN pip install --no-cache-dir \
     apache-airflow-providers-amazon \
     kafka-python \
     requests \
-    pendulum
+    pendulum \
+    boto3
 
 COPY ./dags/ /opt/airflow/dags/
