@@ -11,11 +11,10 @@ from datetime import datetime
 from typing import Optional
 
 import requests
+from config import settings
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
-
-from config import settings
 
 # Configure logging
 logging.basicConfig(

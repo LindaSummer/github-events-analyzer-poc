@@ -1,5 +1,6 @@
 import logging
 
+
 class CallbackIOWrapper:
     def __init__(self, stream, callback):
         self.stream = stream
