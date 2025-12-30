@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-from collections import namedtuple
 from dataclasses import dataclass
 
 import boto3
@@ -19,9 +18,6 @@ logger = logging.getLogger(__name__)
 
 default_args = {"owner": "airflow"}
 
-# create namedtuple, for key and presigned url
-S3Object = namedtuple("S3Object", ["presigned_url", "key", "date"])
-
 @dataclass(frozen=True)
 class PayloadMessage:
     key: str
@@ -31,8 +27,8 @@ class PayloadMessage:
 
 @dag(
     dag_id="github_archive_minio_kafka",
-    start_date=pendulum.datetime(2025, 12, 1, tz="UTC"),
-    schedule="@hourly",
+    start_date=pendulum.datetime(2023, 12, 1, tz="UTC"),
+    schedule="30 * * * *",
     catchup=False,
     default_args=default_args,
     tags=["gh-archive", "minio", "kafka"],
@@ -59,7 +55,7 @@ def github_archive_minio_kafka():
         )
     
     @task
-    def download_github_archive(logical_date=None) -> S3Object:
+    def download_github_archive(logical_date=None) -> dict[str, str]:
         """Download GitHub Archive data for the previous hour."""
         # Parse logical_date from context
         if isinstance(logical_date, str):
@@ -108,17 +104,22 @@ def github_archive_minio_kafka():
             ExpiresIn=30 * 24 * 60 * 60,  # 30 days
         )
         logger.info(f"generate presigned url for s3://{bucket}/{key}: {presigned_url}")
-        return S3Object(presigned_url=presigned_url, key=key, 
-                        date=target_dt.replace(minute=0, second=0, microsecond=0))
+        # return S3Object(presigned_url=presigned_url, key=key, 
+        #                 date=target_dt.replace(minute=0, second=0, microsecond=0))
+        return {
+            "presigned_url": presigned_url,
+            "key": key,
+            "date": target_dt.replace(minute=0, second=0, microsecond=0).to_iso8601_string(),
+        }
 
     @task
-    def push_to_kafka(s3_object: S3Object) -> None:
+    def push_to_kafka(s3_object: dict[str, str]) -> None:
         """Download file from S3 and push the object reference to Kafka."""
-        logger.info(f"Pushing events from {s3_object.key} to Kafka")
+        logger.info(f"Pushing events from {s3_object['key']} to Kafka")
         
         message = PayloadMessage(
-            key=s3_object.key,
-            presigned_url=s3_object.presigned_url,
+            key=s3_object["key"],
+            presigned_url=s3_object["presigned_url"],
             endpoint=endpoint,
         )
         
@@ -127,15 +128,15 @@ def github_archive_minio_kafka():
         
         headers = {
             'Content-Type': 'application/json',
-            'archive-time': s3_object.date.to_iso8601_string(),
+            'archive-time': s3_object['date'],
         }
-        producer.send(topic, key=s3_object.date.format('YYYYMMDDHH').encode("utf-8"),
+        producer.send(topic,
+                      key=s3_object['date'].replace('-', '').replace(':', '').replace('T', '').encode("utf-8"),
                       value=message_payload, headers=[(k, v.encode("utf-8")) for k, v in headers.items()])
         producer.flush()
         producer.close()
-        logger.info(f"Pushed {s3_object.key} to Kafka topic {topic}")
+        logger.info(f"Pushed {s3_object['key']} to Kafka topic {topic}")
 
-    # Task pipeline: download -> upload -> push
     s3_object = download_github_archive()
     push_to_kafka(s3_object)
 
