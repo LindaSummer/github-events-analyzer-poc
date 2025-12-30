@@ -11,7 +11,7 @@ from kafka import KafkaProducer
 from airflow.decorators import dag, task
 from airflow.models import Variable
 
-from gh_archive_flow.utils import ProgressPercentage
+from utils import ProgressPercentage
 
 logger = logging.getLogger(__name__)
 
