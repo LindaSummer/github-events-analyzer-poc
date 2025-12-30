@@ -11,6 +11,8 @@ from kafka import KafkaProducer
 from airflow.decorators import dag, task
 from airflow.models import Variable
 
+from gh_archive_flow.utils import ProgressPercentage
+
 logger = logging.getLogger(__name__)
 
 default_args = {"owner": "airflow"}
@@ -69,7 +71,10 @@ def github_archive_minio_kafka():
                 } |
                 ({"endpoint_url": endpoint} if endpoint else {})),
         )
-        s3.upload_fileobj(Fileobj=resp.raw,
+        
+        content_length = int(resp.headers.get('content-length', 0))
+        
+        s3.upload_fileobj(Fileobj=ProgressPercentage(total_size=content_length, stream=resp.raw),
                           Bucket=bucket,
                           Key=key,
                           ExtraArgs={"ContentType": resp.headers.get("Content-Type"), "Metadata": {"original-url": url}},

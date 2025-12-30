@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir \
     pendulum \
     boto3
 
-COPY ./dags/ /opt/airflow/dags/
+COPY . /opt/airflow/gh_archive_flow
