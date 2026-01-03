@@ -1,0 +1,13 @@
+# Ignore git worktrees and internal directories (regex patterns)
+\.worktrees($|/)
+\.git($|/)
+__pycache__($|/)
+.*\.pyc$
+.*\.pyo$
+.*\.pyd$
+\.pytest_cache($|/)
+\.venv($|/)
+venv($|/)
+event-producer($|/)
+k8s($|/)
+github-events-airflow-demo($|/)
