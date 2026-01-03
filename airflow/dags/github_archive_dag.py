@@ -45,18 +45,16 @@ def github_archive_minio_kafka():
     logger.info(f"Kafka bootstrap servers: {bootstrap_servers}")
     producer = KafkaProducer(bootstrap_servers=bootstrap_servers, acks="all")
     
-    s3 = boto3.client(
+    @task
+    def download_github_archive(logical_date=None) -> dict[str, str]:
+        """Download GitHub Archive data for the previous hour."""
+        s3 = boto3.client(
             "s3",
             **({
                 "aws_access_key_id": access_key,
                 "aws_secret_access_key": secret_key,
-                } |
-                ({"endpoint_url": endpoint} if endpoint else {})),
+            } | ({"endpoint_url": endpoint} if endpoint else {})),
         )
-    
-    @task
-    def download_github_archive(logical_date=None) -> dict[str, str]:
-        """Download GitHub Archive data for the previous hour."""
         # Parse logical_date from context
         if isinstance(logical_date, str):
             logical_date = pendulum.parse(logical_date)
