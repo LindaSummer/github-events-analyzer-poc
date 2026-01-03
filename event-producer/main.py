@@ -162,7 +162,7 @@ def signal_handler(signum, frame):
 def main():
     global producer_instance
     logger.info(f"Starting GitHub Event Producer, metrics on port {settings.metric_port}")
-    # start_http_server(settings.metric_port)
+    start_http_server(settings.metric_port)
     
     # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGTERM, signal_handler)
