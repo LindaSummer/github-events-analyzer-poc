@@ -8,7 +8,8 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_ORG: yetanothercodeant
-  IMAGE_NAME: gh-archive-poc
+  AIRFLOW_IMAGE_NAME: gh-archive-poc
+  SPARK_IMAGE_NAME: github-events-analyzer-spark
 
 jobs:
   build-and-push:
@@ -43,6 +44,18 @@ jobs:
           file: ./airflow/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.branch }}-${{ steps.vars.outputs.sha_short }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/${{ env.AIRFLOW_IMAGE_NAME }}:${{ steps.vars.outputs.branch }}-${{ steps.vars.outputs.sha_short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      
+      - name: Build spark image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./sparkjob
+          file: ./sparkjob/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_ORG }}/${{ env.SPARK_IMAGE_NAME }}:${{ steps.vars.outputs.branch }}-${{ steps.vars.outputs.sha_short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      

@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gh-archive-config
+  namespace: github-events-poc
+data:
+  KAFKA_BOOTSTRAP: github-events-kafka-kafka-bootstrap:9092
+  KAFKA_TOPIC: github-events-realtime
+  KAFKA_STARTING_OFFSETS: latest
+  S3_ENDPOINT: http://minio.minio:9000
+  ICEBERG_WAREHOUSE: s3a://iceberg-data/gh-archive
+  CHECKPOINT_LOCATION: s3a://checkpoints/gh-etl/
+---
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: gh-archive-iceberg
+  namespace: github-events-poc
+spec:
+  type: Python
+  mode: cluster
+  image: ghcr.io/yetanothercodeant/github-events-analyzer-spark:{{SPARK_APP_TAG}}
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///opt/spark/work-dir/etl.py
+  pythonVersion: "3"
+  sparkVersion: "4.1.0"
+  deps:
+    packages: "org.apache.iceberg:iceberg-spark-runtime-3.4_2.12:1.5.2,org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.3,org.apache.kafka:kafka-clients:3.5.1"
+  restartPolicy:
+    type: OnFailure
+    onFailureRetries: 3
+    onFailureRetryInterval: 30
+    onSubmissionFailureRetries: 3
+    onSubmissionFailureRetryInterval: 30
+  sparkConf:
+    spark.sql.extensions: org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
+    spark.sql.catalog.warehouse: org.apache.iceberg.spark.SparkCatalog
+    spark.sql.catalog.warehouse.type: hadoop
+    spark.sql.catalog.warehouse.warehouse: "$(ICEBERG_WAREHOUSE)"
+    spark.hadoop.fs.s3a.path.style.access: "true"
+    spark.streaming.stopGracefullyOnShutdown: "true"
+    spark.sql.streaming.forceDeleteTempCheckpointLocation: "true"
+  driver:
+    cores: 1
+    memory: 2g
+    serviceAccount: spark
+    envFrom:
+      - configMapRef:
+          name: gh-archive-config
+      - secretRef:
+          name: s3-credentials
+    volumeMounts:
+      - name: workdir
+        mountPath: /opt/spark/work-dir
+    labels:
+      role: driver
+  executor:
+    instances: 2
+    cores: 1
+    memory: 2g
+    envFrom:
+      - configMapRef:
+          name: gh-archive-config
+      - secretRef:
+          name: s3-credentials
+    volumeMounts:
+      - name: workdir
+        mountPath: /opt/spark/work-dir
+    labels:
+      role: executor
+  volumes:
+    - name: workdir
+      emptyDir: {}
