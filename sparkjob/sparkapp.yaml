@@ -23,9 +23,12 @@ spec:
   imagePullPolicy: IfNotPresent
   mainApplicationFile: local:///opt/spark/work-dir/etl.py
   pythonVersion: "3"
-  sparkVersion: "4.1.0"
+  sparkVersion: "3.4.4"
   deps:
-    packages: "org.apache.iceberg:iceberg-spark-runtime-3.4_2.12:1.5.2,org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.3,org.apache.kafka:kafka-clients:3.5.1"
+    packages:
+    - org.apache.iceberg:iceberg-spark-runtime-3.4_2.12:1.5.2
+    - org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.3
+    - org.apache.kafka:kafka-clients:3.5.1"
   restartPolicy:
     type: OnFailure
     onFailureRetries: 3
