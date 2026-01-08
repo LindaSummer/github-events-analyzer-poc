@@ -5,8 +5,7 @@ FROM apache/spark:3.4.4-scala2.12-java11-python3-ubuntu
 WORKDIR /opt/spark/work-dir
 
 # Copy application code
-COPY etl.py main.py ./
-COPY README.md ./
+COPY . ./
 
 # Default command is inherited from the base image; Spark Operator supplies
 # spark-submit arguments based on the SparkApplication spec.

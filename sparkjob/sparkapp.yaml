@@ -14,12 +14,12 @@ data:
 apiVersion: sparkoperator.k8s.io/v1beta2
 kind: SparkApplication
 metadata:
-  name: gh-archive-iceberg-etl3
+  name: gh-archive-iceberg-etl
   namespace: github-events-poc
 spec:
   type: Python
   mode: cluster
-  image: ghcr.io/yetanothercodeant/github-events-analyzer-spark:feat-sparkjob-e98db5d1101c
+  image: ghcr.io/yetanothercodeant/github-events-analyzer-spark:{{SPARK_APP_TAG}}
   imagePullPolicy: IfNotPresent
   mainApplicationFile: local:///opt/spark/work-dir/etl.py
   pythonVersion: "3"
